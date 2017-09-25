@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,15 +39,18 @@ var sequenceBits uint64 = 16
 var sequenceMask = uint64(int64(-1) ^ (int64(-1) << sequenceBits))
 var maxSequenceNumber = uint64(^sequenceMask)
 
+// generator is an implementtion of Generator
 type generator struct {
 	epoch      int64
 	hardwareID HardwareID
 	processID  int
-	lastTime   int64
-	sequence   uint64
-	mutex      sync.Mutex
+	machineID  uint64
 
-	machineID uint64
+	lastTime          int64
+	lastAllocatedTime int64
+	sequence          uint64
+
+	mutex sync.Mutex
 }
 
 // NewGenerator creates an instance of generator which implements Generator
@@ -81,6 +85,12 @@ func (gen *generator) ProcessID() int {
 	return gen.processID
 }
 
+func (gen *generator) LastAllocatedTime() int64 {
+	// use the atomic api for both reads and writes of this value so that we do not
+	// need to incur the overhead of the mutex or create additional contention
+	return atomic.LoadInt64(&gen.lastAllocatedTime)
+}
+
 func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error) {
 	if len(buffer) < OvertFlakeIDLength {
 		return 0, ErrBufferTooSmall
@@ -97,8 +107,6 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 		if err != nil {
 			return totalAllocated, err
 		}
-
-		totalAllocated += int(allocated)
 
 		// calculate the delta between the interval (Unix Epoch in milliseconds)
 		// and the epoch being used for id generation
@@ -118,6 +126,11 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 				if err != nil {
 					return
 				}
+
+				// more were delivered so update our return value
+				totalAllocated += int(index / 16)
+
+				// back to beginning of the buffer
 				index = 0
 			}
 		}
@@ -128,6 +141,11 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 			if err != nil {
 				return
 			}
+
+			// more were delivered so update our return value
+			totalAllocated += int(index / 16)
+
+			// back to beginning of the buffer
 			index = 0
 		}
 
@@ -201,6 +219,12 @@ func (gen *generator) allocate(count int) (uint64, int64, error) {
 
 	// advance the sequence for the # of items allocated
 	gen.sequence = (gen.sequence + allocated) & sequenceMask
+
+	// remember the last time interval where we allocated one or more ids.
+	//
+	// Note that although we own the mutex, the reader uses atomic so
+	// we (the writer) do the same
+	atomic.StoreInt64(&gen.lastAllocatedTime, gen.lastTime)
 
 	return allocated, current, nil
 }
