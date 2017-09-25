@@ -17,3 +17,6 @@ const SnowflakeEpochMs = int64(1288834974657)
 
 // OvertFlakeIDLength is the length, in bytes, of an Overt-flake ID
 const OvertFlakeIDLength = 16
+
+// MACAddressLength is the length, in bytes, of a Network MAC address
+const MACAddressLength = 6
