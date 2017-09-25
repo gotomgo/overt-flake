@@ -23,7 +23,7 @@ func TestOvertFlakeID(t *testing.T) {
 	assert.Equal(t, lower, id.Lower())
 
 	assert.Equal(t, upper>>16, id.Timestamp())
-	assert.Equal(t, uint16(upper&0xFFFF), id.Interval())
+	assert.Equal(t, uint16(upper&0xFFFF), id.SequenceID())
 
 	assert.Equal(t, HardwareID(idBytes[8:14]), id.HardwareID())
 	assert.Equal(t, uint16(lower&0xFFFF), id.ProcessID())

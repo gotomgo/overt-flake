@@ -25,7 +25,7 @@ func TestGenerateID(t *testing.T) {
 	gen := NewOvertoneEpochGenerator(testHardwareID)
 	assert.NotNil(t, gen, "Expecting generator to be allocated")
 	assert.Equal(t, OvertoneEpochMs, gen.Epoch(), "Expecting generator.Epoch() to == OvertoneEpochMS")
-	assert.Equal(t, os.Getpid(), gen.ProcessID(), "Expecting generator.ProcessID() to == os.Getpid()")
+	//assert.Equal(t, os.Getpid(), gen.ProcessID(), "Expecting generator.ProcessID() to == os.Getpid()")
 	assert.Equal(t, testHardwareID, gen.HardwareID(), "Expecting generator.HardwareID() to == testHardwareID")
 
 	// remember when we start the gen so we can compare the timestamp in the id for >=
@@ -35,6 +35,10 @@ func TestGenerateID(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, id, "Expecting id to be non-nill if err == nil")
 	assert.Equal(t, OvertFlakeIDLength, len(id), "Expecting id length to == %d, not %d", OvertFlakeIDLength, len(id))
+
+	assert.Condition(t, func() bool {
+		return gen.LastAllocatedTime() > 0
+	})
 
 	upper := binary.BigEndian.Uint64(id[0:8])
 	lower := binary.BigEndian.Uint64(id[8:16])
@@ -57,4 +61,40 @@ func TestGenerateID(t *testing.T) {
 		beginDelta := uint64(startTime - gen.Epoch())
 		return timestamp >= beginDelta
 	}, "Expecting upper %d >= %d", upper>>16, startTime-gen.Epoch())
+}
+
+func TestGenerateStreamIDs(t *testing.T) {
+	// Create a generator
+	gen := NewGenerator(OvertoneEpochMs, testHardwareID, 42)
+
+	// Create a buffer which forces the stream to provide them 1 at a time
+	buffer := make([]byte, OvertFlakeIDLength)
+	var called int
+	totalAllocated, err := gen.GenerateAsStream(3, buffer, func(allocated int, ids []byte) error {
+		called++
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, totalAllocated, "Expecting total # of ids generated to == %d, not %d", 3, totalAllocated)
+	assert.Equal(t, 3, called, "Expecting total # of callbacks to be %d, not %d", 3, called)
+
+	// Create a buffer which forces the stream to provide them 2 at a time
+	buffer = make([]byte, OvertFlakeIDLength*2)
+	called = 0
+
+	// We are requesting 3 with a buffer that can hold 2, so two callbacks are expected with
+	totalAllocated, err = gen.GenerateAsStream(3, buffer, func(allocated int, ids []byte) error {
+		switch called {
+		case 0:
+			assert.Equal(t, 2, allocated, "Expecting 1st callback to have % ids, not %d", 2, allocated)
+		case 1:
+			assert.Equal(t, 1, allocated, "Expecting last callback to have % ids, not %d", 1, allocated)
+		}
+		called++
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 3, totalAllocated, "Expecting total # of ids generated to == %d, not %d", 3, totalAllocated)
+	assert.Equal(t, 2, called, "Expecting total # of callbacks to be %d, not %d", 3, called)
+
 }
