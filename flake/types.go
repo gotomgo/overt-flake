@@ -11,8 +11,15 @@ type Generator interface {
 	// ProcessID returns the process id hosting the overt-flake Generator
 	ProcessID() int
 
+	// LastAllocatedTime is the last Unix Epoch value that one or more ids
+	// are known to have been generated
+	LastAllocatedTime() int64
+
 	// Generate generates count overt-flake identifiers
 	Generate(count int) ([]byte, error)
+
+	// GenerateAsStream allocates and returns ids in chunks (based on the size of buffer) via a callback
+	GenerateAsStream(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error)
 }
 
 // HardwareID is an alias for []byte
@@ -30,8 +37,8 @@ type OvertFlakeID interface {
 	// Timestamp is when the ID was generated, and is the # of milliseconds since
 	// the generator Epoch
 	Timestamp() uint64
-	// Interval represents the Nth value created during a time interval (0 for the 1st)
-	Interval() uint16
+	// SequenceID represents the Nth value created during a time interval (0 for the 1st)
+	SequenceID() uint16
 
 	// HardwareID is the HardwareID assigned by the generator
 	HardwareID() HardwareID
