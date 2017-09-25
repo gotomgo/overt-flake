@@ -14,3 +14,6 @@ const UnixEpochMs = int64(0)
 // SnowflakeEpochMs is the number of milliseconds elapsed between the Unix Epoch
 // (1/1/19070) and the Twitter Snowflake Epoch (2010-11-04 01:42:54 +0000 UTC ??)
 const SnowflakeEpochMs = int64(1288834974657)
+
+// OvertFlakeIDLength is the length, in bytes, of an Overt-flake ID
+const OvertFlakeIDLength = 16
