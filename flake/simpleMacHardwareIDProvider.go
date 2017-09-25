@@ -2,6 +2,11 @@ package flake
 
 import "net"
 
+// simpleMacHardwareIDProvider implements HardwareIDProvider and returns the
+// 1st Hardwared MAC address it can find that has enough bytes to satisfy
+// the GetHardwareID request.
+//
+// NOTE: Use of this hardware ID provider is NOT recommended for production use
 type simpleMacHardwareIDProvider struct{}
 
 // NewSimpleMacHardwareIDProvider creates a new instance of simpleMacHardwareIDProvider
@@ -11,9 +16,8 @@ func NewSimpleMacHardwareIDProvider() HardwareIDProvider {
 }
 
 func (mac *simpleMacHardwareIDProvider) GetHardwareID(byteSize int) ([]byte, error) {
-	// On the lower bound we presume the caller(s) will do something reasonable. For the
-	// upper bound we are limited to the 6 bytes comprising the MAC address
-	if byteSize > 6 {
+	// For simplicity we required the requested size to be == to the # of bytes in a MAC address (6)
+	if byteSize != MACAddressLength {
 		return nil, ErrInvalidSizeForHardwareAddress
 	}
 
@@ -27,7 +31,7 @@ func (mac *simpleMacHardwareIDProvider) GetHardwareID(byteSize int) ([]byte, err
 	}
 
 	for _, net := range inets {
-		if net.HardwareAddr != nil {
+		if len(net.HardwareAddr) >= byteSize {
 			return net.HardwareAddr[0:byteSize], nil
 		}
 	}
