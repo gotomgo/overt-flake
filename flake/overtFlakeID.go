@@ -24,9 +24,9 @@ func (id *overtFlakeID) Timestamp() uint64 {
 	return id.Upper() >> 16
 }
 
-// Interval represents the Nth value created during a time interval
+// SequenceID represents the Nth value created during a time interval
 // (0 if the 1st interval generated)
-func (id *overtFlakeID) Interval() uint16 {
+func (id *overtFlakeID) SequenceID() uint16 {
 	return uint16(id.Upper() & 0xFFFF)
 }
 
