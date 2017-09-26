@@ -2,8 +2,6 @@ package ofsserver
 
 import (
 	"encoding/binary"
-	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net"
@@ -11,11 +9,9 @@ import (
 	"github.com/gotomgo/overt-flake/flake"
 )
 
-var (
-	ErrAuthRequired   = errors.New("Client authentication is required")
-	ErrInvalidRequest = errors.New("Invalid request")
-	ErrInvalidAuth    = errors.New("Invalid Credentials")
-	ErrShortWrite     = errors.New("Expecting to write more bytes than were actually written")
+const (
+	// MaxAuthTokenLength is the maximum allowable length of an authentication token
+	MaxAuthTokenLength = 255
 )
 
 // OvertFlakeServer is a simple flake ID server based on NOEQD
@@ -27,12 +23,24 @@ type OvertFlakeServer struct {
 }
 
 // NewOvertFlakeServer creates an instance of OvertFlakeServer
-func NewOvertFlakeServer(generator flake.Generator, ipAddr, authToken string) *OvertFlakeServer {
+func NewOvertFlakeServer(generator flake.Generator, ipAddr, authToken string) (*OvertFlakeServer, error) {
+	if generator == nil {
+		return nil, CreateArgumentNilError("generator")
+	}
+
+	if len(ipAddr) == 0 {
+		return nil, CreateBadArgumentError("ipAddr", "The value cannot be empty")
+	}
+
+	if len(authToken) > MaxAuthTokenLength {
+		return nil, CreateBadArgumentError("authToken", "The length of an auth token cannot exceed %d", MaxAuthTokenLength)
+	}
+
 	return &OvertFlakeServer{
 		ipAddr:    ipAddr,
 		generator: generator,
 		authToken: authToken,
-	}
+	}, nil
 }
 
 // Serve activates an OvertFlakeServer to accept connections and process requests
@@ -69,7 +77,10 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 	// if an authToken is specified then clients must send an auth sequence
 	// FF FF FF n {n bytes} where {n bytes} is the client value for the auth token
 	if server.authToken != "" {
-		server.authenticateClient(reader)
+		err := server.authenticateClient(reader)
+		if err != nil {
+			return err
+		}
 	}
 
 	// buffer for 16 IDs at a time
@@ -90,7 +101,7 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 
 		if count == 0 {
 			// 0 is not a valid ID count
-			return ErrInvalidRequest
+			return CreateBadArgumentError("count", "must be > 0")
 		}
 
 		_, err = server.generator.GenerateAsStream(int(count), buffer, func(allocated int, ids []byte) error {
@@ -105,7 +116,6 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 			}
 
 			if (err == nil) && (bytesWritten != totalBytes) {
-				fmt.Printf("The bytesWritten, %d, was expected to be %d\n", bytesWritten, totalBytes)
 				return ErrShortWrite
 			}
 
