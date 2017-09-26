@@ -74,6 +74,10 @@ func NewOvertoneEpochGenerator(hardwareID HardwareID) Generator {
 	return NewGenerator(OvertoneEpochMs, hardwareID, os.Getpid(), 0)
 }
 
+func (gen *generator) IDSize() int {
+	return OvertFlakeIDLength
+}
+
 func (gen *generator) Epoch() int64 {
 	return gen.epoch
 }

@@ -11,6 +11,9 @@ type Generator interface {
 	// ProcessID returns the process id hosting the overt-flake Generator
 	ProcessID() int
 
+	// Get the size, in bytes, of IDs created by the generator
+	IDSize() int
+
 	// LastAllocatedTime is the last Unix Epoch value that one or more ids
 	// are known to have been generated
 	LastAllocatedTime() int64

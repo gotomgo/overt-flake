@@ -83,8 +83,10 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 		}
 	}
 
+	idSize := server.generator.IDSize()
+
 	// buffer for 16 IDs at a time
-	buffer := make([]byte, 16*flake.OvertFlakeIDLength)
+	buffer := make([]byte, 16*idSize)
 
 	// a generate command is a 4-byte int (BigEndian) representing the # of ids
 	// to be generated
@@ -107,9 +109,9 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 		_, err = server.generator.GenerateAsStream(int(count), buffer, func(allocated int, ids []byte) error {
 			var bytesWritten int
 
-			totalBytes := flake.OvertFlakeIDLength * allocated
+			totalBytes := idSize * allocated
 
-			if allocated == (len(buffer) / flake.OvertFlakeIDLength) {
+			if allocated == (len(buffer) / idSize) {
 				bytesWritten, err = writer.Write(ids)
 			} else {
 				bytesWritten, err = writer.Write(ids[0:totalBytes])

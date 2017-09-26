@@ -27,6 +27,7 @@ func TestGenerateID(t *testing.T) {
 	assert.Equal(t, OvertoneEpochMs, gen.Epoch(), "Expecting generator.Epoch() to == OvertoneEpochMS")
 	//assert.Equal(t, os.Getpid(), gen.ProcessID(), "Expecting generator.ProcessID() to == os.Getpid()")
 	assert.Equal(t, testHardwareID, gen.HardwareID(), "Expecting generator.HardwareID() to == testHardwareID")
+	assert.Equal(t, OvertFlakeIDLength, gen.IDSize(), "Expecting generator.IDSize() to == OvertFlakeIDLength")
 
 	// remember when we start the gen so we can compare the timestamp in the id for >=
 	startTime := time.Now().UTC().UnixNano() / 1e6
