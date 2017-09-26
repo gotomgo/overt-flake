@@ -11,6 +11,7 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 
 executing ofsserver -help shows the following usage:
 
+```
 ofsrvr: 0.2.1, Runtime: gc, Compiler: go1.8.3, Copyright © 2017 Overtone Studios, Inc.
 Usage: ofsrvr [options]
 Options:
@@ -31,7 +32,7 @@ Generator Types:
 Common Options:
     -help, --help    Show this message
     -v, --version    Show version
-
+```
 
 ## Simple Client Example
 
