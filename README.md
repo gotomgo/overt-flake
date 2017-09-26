@@ -12,7 +12,7 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 executing ofsserver -help shows the following usage:
 
 ```
-ofsrvr: 0.2.1, Runtime: gc, Compiler: go1.8.3, Copyright © 2017 Overtone Studios, Inc.
+ofsrvr: 0.3.1, Runtime: gc, Compiler: go1.8.3, Copyright © 2017 Overtone Studios, Inc.
 Usage: ofsrvr [options]
 Options:
     -ip              specify the network interface/address to listen on                 default=0.0.0.0:4444
@@ -21,10 +21,15 @@ Options:
     -epoch           specify the epoch in milliseconds elapsed since Unix Epoch         default=1483228800000
     -waitfor         specify a time at which id generation may start, but not before    default=0
     -auth            specify the sequence of characters that make up the auth token     default=""
+    -config          specify a path to a configuration file                             default=""
+
+Notes:
+* arguments specified on the command-line override values specified in -config file
+* waitfor *must* be specified on the command line
 
 Hid Types:
     simple           simple MAC hardware ID provider
-    mac              standard MAC hardward ID provider (default)
+    mac              standard MAC hardware ID provider (default)
 
 Generator Types:
     default          the standard overt-flake ID generator
