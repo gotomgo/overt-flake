@@ -2,12 +2,9 @@ package ofsclient
 
 import (
 	"encoding/binary"
-	"math/big"
 	"math/rand"
 	"net"
 	"sync"
-
-	"github.com/gotomgo/overt-flake/flake"
 )
 
 type client struct {
@@ -15,10 +12,11 @@ type client struct {
 	conn      net.Conn
 	servers   []string
 	authToken string
+	idSize    int
 }
 
 // NewClient creates an instance of client which implements Client
-func NewClient(authToken string, servers ...string) (Client, error) {
+func NewClient(authToken string, idSize int, servers ...string) (Client, error) {
 	if len(servers) == 0 {
 		return nil, ErrNoServers
 	}
@@ -27,7 +25,7 @@ func NewClient(authToken string, servers ...string) (Client, error) {
 		return nil, ErrAuthTokenTooLarge
 	}
 
-	return &client{authToken: authToken, servers: servers}, nil
+	return &client{authToken: authToken, servers: servers, idSize: idSize}, nil
 }
 
 func (c *client) Close() {
@@ -108,7 +106,7 @@ func (c *client) GenerateIDBytes(count int) (ids []byte, err error) {
 	}
 
 	// the number of bytes we expect to read
-	expectedBytes := count * flake.OvertFlakeIDLength
+	expectedBytes := count * c.idSize
 
 	// create a bytes buffer to accumulate the ids
 	ids = make([]byte, expectedBytes)
@@ -126,57 +124,7 @@ func (c *client) GenerateIDBytes(count int) (ids []byte, err error) {
 	return
 }
 
-// GenerateIDs generates count overt-flake identifiers in the form of []big.Int
-func (c *client) GenerateIDsAsBigInt(count int) (bigInts []big.Int, err error) {
-	ids, err := c.GenerateIDBytes(count)
-	if err != nil {
-		return
-	}
-
-	bigInts = make([]big.Int, count)
-
-	// convert each 16 bytes (flake.OvertFlakeIDLength) into a big.Int
-	for i := 0; i < count; i++ {
-		offset := i * flake.OvertFlakeIDLength
-		flakeID := flake.NewOvertFlakeID(ids[offset : offset+flake.OvertFlakeIDLength])
-		bigInts[i] = *flakeID.ToBigInt()
-	}
-
-	return
-}
-
-// GenerateID generates a single overt-flake identifier in the form of a *big.Int
-func (c *client) GenerateIDAsBigInt() (*big.Int, error) {
-	ids, err := c.GenerateIDsAsBigInt(1)
-	if len(ids) == 0 {
-		return nil, err
-	}
-	return &ids[0], nil
-}
-
-// GenerateIDsAsFlake generates count overt-flake identifiers in the form of []flake.OvertFlakeID
-func (c *client) GenerateIDsAsFlake(count int) (flakes []flake.OvertFlakeID, err error) {
-	ids, err := c.GenerateIDBytes(count)
-	if err != nil {
-		return
-	}
-
-	flakes = make([]flake.OvertFlakeID, count)
-
-	// convert each 16 bytes (flake.OvertFlakeIDLength) into a Flake
-	for i := 0; i < count; i++ {
-		offset := i * flake.OvertFlakeIDLength
-		flakes[i] = flake.NewOvertFlakeID(ids[offset : offset+flake.OvertFlakeIDLength])
-	}
-
-	return
-}
-
-// GenerateID generates a single overt-flake identifier in the form of a *big.Int
-func (c *client) GenerateIDAsFlake() (*flake.OvertFlakeID, error) {
-	ids, err := c.GenerateIDsAsFlake(1)
-	if len(ids) == 0 {
-		return nil, err
-	}
-	return &ids[0], nil
+// GenerateID generates a single ID in []byte form
+func (c *client) GenerateID() (id []byte, err error) {
+	return c.GenerateIDBytes(1)
 }
