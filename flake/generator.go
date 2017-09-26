@@ -54,7 +54,7 @@ type generator struct {
 }
 
 // NewGenerator creates an instance of generator which implements Generator
-func NewGenerator(epoch int64, hardwareID HardwareID, processID int) Generator {
+func NewGenerator(epoch int64, hardwareID HardwareID, processID int, waitForTime int64) Generator {
 	// binary.BigEndian.Uint64 won't work on a []byte < len(8) so we need to
 	// copy our 6-byte hardwareID into the most-signficant bits
 	tempBytes := make([]byte, 8)
@@ -65,12 +65,13 @@ func NewGenerator(epoch int64, hardwareID HardwareID, processID int) Generator {
 		hardwareID: hardwareID,
 		processID:  processID & 0xFFFF,
 		machineID:  binary.BigEndian.Uint64(tempBytes) | uint64(processID&0xFFFF),
+		lastTime:   waitForTime,
 	}
 }
 
 // NewOvertoneEpochGenerator creates an instance of generator using the Overtone Epoch
 func NewOvertoneEpochGenerator(hardwareID HardwareID) Generator {
-	return NewGenerator(OvertoneEpochMs, hardwareID, os.Getpid())
+	return NewGenerator(OvertoneEpochMs, hardwareID, os.Getpid(), 0)
 }
 
 func (gen *generator) Epoch() int64 {
