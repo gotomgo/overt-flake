@@ -142,7 +142,7 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 
 		// partial buffer fill
 		if index > 0 {
-			callback(index/16, buffer)
+			err = callback(index/16, buffer)
 			if err != nil {
 				return
 			}
