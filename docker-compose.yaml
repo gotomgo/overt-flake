@@ -1,0 +1,9 @@
+version: "3"
+services:
+  ofsrvr:
+    image: overtonestudio/ofsrvr
+    command: I can never get docker-compose to use this value. UGH
+    ports:
+        - "4444:4444"
+    volumes:
+      - $HOME/overtone/ofsrvr/logs:/logfiles
