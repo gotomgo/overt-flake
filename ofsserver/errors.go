@@ -11,6 +11,9 @@ var (
 	ErrAuthRequired = errors.New("Client authentication is required")
 	// ErrInvalidAuth occurs when the client authentication is incorrect
 	ErrInvalidAuth = errors.New("Invalid Credentials")
+	// ErrInvalidReauthentication occurs when the client sends a authentication header after
+	// the client has already authenticated
+	ErrInvalidReauthentication = errors.New("Client is attempting unexpected re-authentication")
 	// ErrShortWrite occurs when the server writes less bytes than it expected to write and it is
 	// considered an error
 	ErrShortWrite = errors.New("Expecting to write more bytes than were actually written")
