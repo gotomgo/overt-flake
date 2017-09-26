@@ -7,6 +7,37 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 2. External configuration information such as worker id and data-center id are not needed. Machine identifiers, both stable and unstable are used instead
 3. The Overtone Epoch (Jan 1, 2017) is the default epoch used. The code allows for any epoch, including Twitter Epoch or Unix Epoch. The primary reason is that 1/1/2017 is a Sunday (not important for ID generation) and nostalgically, it is also the day technical development of Overtone began.
 
+## Over-Flake ID Format
+
+```
+//  ---------------------------------------------------------------------------
+//  Layout - Big Endian
+//  ---------------------------------------------------------------------------
+//  [0:6]   48 bits | Upper 48 bits of timestamp (milliseconds since the epoch)
+//  [6:8]   16 bits | a per-interval sequence # (interval == 1 millisecond)
+//  [9:14]  48 bits | a hardware id
+//  [14:16] 16 bits | process ID
+//  ---------------------------------------------------------------------------
+//  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |  7  |  8  | 9 | A | B | C | D |  E  |  F  |
+//  ---------------------------------------------------------------------------
+//  |           48 bits         |  16 bits  |     48 bits       |  16 bits  |
+//  ---------------------------------------------------------------------------
+//  |          timestamp        |  interval |    HardwareID     | ProcessID |
+//  ---------------------------------------------------------------------------
+//  Notes
+//  ---------------------------------------------------------------------------
+//  The time bits are the most signficant bits because they have the primary
+//  impact on the sort order of ids. The interval/seq # is next most significant
+//  as it is the tie-breaker when the time portions are equivalent.
+//
+//  Note that the lower 64 bits are basically random and not specifically
+//  useful for ordering, although they play their party when the upper 64-bits
+//  are equivalent between two ideas. Again, the ordering outcome in this
+//  situation is somewhat random, but generally somewhat repeatable (hardware
+//  id should be consistent and stable a vast majority of the time).
+//  ---------------------------------------------------------------------------
+```
+
 ## Server Console Usage
 
 executing ofsserver -help shows the following usage:
