@@ -22,7 +22,7 @@ Options:
     -waitfor         specify a time at which id generation may start, but not before    default=0
     -auth            specify the sequence of characters that make up the auth token     default=""
     -config          specify a path to a configuration file                             default=""
-    -hid             specify a hardward id to use when -hidype == "fixed"								default=""
+    -hid             specify a hardware id to use when -hidype == "fixed"               default=""
 
 Notes:
 * arguments specified on the command-line override values specified in -config file
@@ -31,7 +31,7 @@ Notes:
 Hid Types:
     simple           simple MAC hardware ID provider
     mac              standard MAC hardware ID provider (default)
-    fixed            specifies that a fixed hardward id is used (see -hid)
+    fixed            specifies that a fixed hardware id is used (see -hid)
 
 Generator Types:
     default          the standard overt-flake ID generator
@@ -201,7 +201,7 @@ func main() {
 	//	- overt-flake ID Server
 	//	---------------------------------------------------------
 
-	// create the hardward id provider. Note we always pass config.HardwareID as
+	// create the hardware id provider. Note we always pass config.HardwareID as
 	// we don't know if it will be used or not (it is used when hidType = "fixed")
 	hidProvider, err := createHardwareIDProvider(config.HidType, config.HardwareID)
 	if err != nil {

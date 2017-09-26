@@ -53,6 +53,7 @@ Options:
     -waitfor         specify a time at which id generation may start, but not before    default=0
     -auth            specify the sequence of characters that make up the auth token     default=""
     -config          specify a path to a configuration file                             default=""
+    -hid             specify a hardware id to use when -hidype == "fixed"               default=""
 
 Notes:
 * arguments specified on the command-line override values specified in -config file
@@ -61,6 +62,7 @@ Notes:
 Hid Types:
     simple           simple MAC hardware ID provider
     mac              standard MAC hardware ID provider (default)
+    fixed            specifies that a fixed hardware id is used (see -hid)
 
 Generator Types:
     default          the standard overt-flake ID generator
