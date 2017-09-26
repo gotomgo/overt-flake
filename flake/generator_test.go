@@ -65,7 +65,7 @@ func TestGenerateID(t *testing.T) {
 
 func TestGenerateStreamIDs(t *testing.T) {
 	// Create a generator
-	gen := NewGenerator(OvertoneEpochMs, testHardwareID, 42)
+	gen := NewGenerator(OvertoneEpochMs, testHardwareID, 42, 0)
 
 	// Create a buffer which forces the stream to provide them 1 at a time
 	buffer := make([]byte, OvertFlakeIDLength)
