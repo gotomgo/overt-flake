@@ -1,0 +1,5 @@
+ipAddr: 0.0.0.0:4444
+epoch: 0
+hidType: simple
+genType: default
+authToken: "abc123"
