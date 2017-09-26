@@ -74,6 +74,8 @@ func (server *OvertFlakeServer) acceptAndServe() error {
 }
 
 func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) error {
+	var hasAuthed bool
+
 	// if an authToken is specified then clients must send an auth sequence
 	// FF FF FF n {n bytes} where {n bytes} is the client value for the auth token
 	if server.authToken != "" {
@@ -81,6 +83,8 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 		if err != nil {
 			return err
 		}
+
+		hasAuthed = true
 	}
 
 	idSize := server.generator.IDSize()
@@ -104,6 +108,22 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 		if count == 0 {
 			// 0 is not a valid ID count
 			return CreateBadArgumentError("count", "must be > 0")
+		}
+
+		// if authorization is NOT required but the client thinks it is then
+		// we end up here going WTF? So, just complete the authentication process
+		// (basically a NOP) and move on. In this case where authentication has
+		// already occured, then its a violation of protocol and we error out
+		if (uint32(count) & 0xFFFFFF00) == 0xFFFFFF00 {
+			if !hasAuthed {
+				err = server.doAuth(reader, uint8(count&0xFF))
+				if err != nil {
+					return err
+				}
+				hasAuthed = true
+			} else {
+				return ErrInvalidReauthentication
+			}
 		}
 
 		_, err = server.generator.GenerateAsStream(int(count), buffer, func(allocated int, ids []byte) error {
@@ -130,6 +150,22 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 	}
 }
 
+func (server *OvertFlakeServer) doAuth(reader io.Reader, tokenCount uint8) (err error) {
+	tokenBytes := make([]byte, tokenCount&0xFF)
+	_, err = io.ReadFull(reader, tokenBytes)
+	if err != nil {
+		return err
+	}
+
+	if len(server.authToken) > 0 {
+		if string(tokenBytes) != server.authToken {
+			return ErrInvalidAuth
+		}
+	}
+
+	return nil
+}
+
 func (server *OvertFlakeServer) authenticateClient(reader io.Reader) error {
 	authBytes := make([]byte, 4)
 	_, err := io.ReadFull(reader, authBytes)
@@ -142,15 +178,5 @@ func (server *OvertFlakeServer) authenticateClient(reader io.Reader) error {
 		return ErrAuthRequired
 	}
 
-	tokenBytes := make([]byte, authCmd&0xFF)
-	_, err = io.ReadFull(reader, tokenBytes)
-	if err != nil {
-		return err
-	}
-
-	if string(tokenBytes) != server.authToken {
-		return ErrInvalidAuth
-	}
-
-	return nil
+	return server.doAuth(reader, uint8(authCmd&0xFF))
 }
