@@ -48,7 +48,7 @@ func showUsage() {
 
 func showAppVersion() {
 	fmt.Fprintf(os.Stderr, `ofsrvr: %s, Runtime: %s, Compiler: %s, Copyright © 2017 Overtone Studios, Inc.`,
-		"0.3.1",
+		"0.5.0",
 		runtime.Compiler,
 		runtime.Version())
 	fmt.Fprintln(os.Stderr, "")
