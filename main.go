@@ -22,6 +22,7 @@ Options:
     -waitfor         specify a time at which id generation may start, but not before    default=0
     -auth            specify the sequence of characters that make up the auth token     default=""
     -config          specify a path to a configuration file                             default=""
+    -hid             specify a hardward id to use when -hidype == "fixed"								default=""
 
 Notes:
 * arguments specified on the command-line override values specified in -config file
@@ -30,6 +31,7 @@ Notes:
 Hid Types:
     simple           simple MAC hardware ID provider
     mac              standard MAC hardware ID provider (default)
+    fixed            specifies that a fixed hardward id is used (see -hid)
 
 Generator Types:
     default          the standard overt-flake ID generator
@@ -65,7 +67,7 @@ func showErrorWithUsage(fmtstr string, args ...interface{}) {
 	os.Exit(-1)
 }
 
-func createHardwareIDProvider(hidType string) (flake.HardwareIDProvider, error) {
+func createHardwareIDProvider(hidType string, fixedID []byte) (flake.HardwareIDProvider, error) {
 	var hidProvider flake.HardwareIDProvider
 
 	switch strings.ToLower(hidType) {
@@ -74,6 +76,10 @@ func createHardwareIDProvider(hidType string) (flake.HardwareIDProvider, error) 
 		break
 	case "simple":
 		hidProvider = flake.NewSimpleMacHardwareIDProvider()
+		break
+	case "fixed":
+		// A fixed Hardware ID is used. Create a fixed provider
+		hidProvider = flake.NewFixedHardwareIDProvider(fixedID)
 		break
 	default:
 		showErrorWithUsage("Unsupported type for Hardware ID provider: %s", hidType)
@@ -99,14 +105,18 @@ func createOvertFlakeIDGenerator(genType string, epoch int64, hardwareID flake.H
 func main() {
 	showAppVersion()
 
-	var showVersion bool
+	// args that can override configuration
 	var argIPAddr string
-	var waitForTime int64
 	var argHidType string
 	var argGenType string
 	var argEpoch int64
 	var argAuthToken string
+	var argHardwareID string
+
+	// other args
+	var waitForTime int64
 	var configPath string
+	var showVersion bool
 
 	flag.StringVar(&argIPAddr, "ip", "", "the interface/address to listen on")
 	flag.Int64Var(&waitForTime, "waitfor", 0, "the time to wait for prior to generating ids")
@@ -117,6 +127,7 @@ func main() {
 	flag.BoolVar(&showVersion, "version", false, "print ofsrvr version information")
 	flag.BoolVar(&showVersion, "v", false, "print ofsrvr version information")
 	flag.StringVar(&configPath, "config", "", "the path to a ofs server configuration file")
+	flag.StringVar(&argHardwareID, "hid", "", "the fixed hardware id")
 
 	flag.Usage = showUsage
 	flag.Parse()
@@ -130,11 +141,12 @@ func main() {
 	//	---------------------------------------------------------
 
 	var config = &serverConfig{
-		IPAddr:    "0.0.0.0:4444",
-		HidType:   "mac",
-		GenType:   "default",
-		Epoch:     flake.OvertoneEpochMs,
-		AuthToken: "",
+		IPAddr:     "0.0.0.0:4444",
+		HidType:    "mac",
+		GenType:    "default",
+		Epoch:      flake.OvertoneEpochMs,
+		AuthToken:  "",
+		HardwareID: []byte{},
 	}
 
 	//	---------------------------------------------------------
@@ -174,6 +186,13 @@ func main() {
 		config.AuthToken = argAuthToken
 	}
 
+	if len(argHardwareID) > 0 {
+		if config.HidType != "fixed" {
+			showError("Use of fixed hardware ID (-hid) requires '-hidType fixed'")
+		}
+		config.HardwareID = []byte(argHardwareID)
+	}
+
 	//	---------------------------------------------------------
 	//	Create the components needed to run the server
 	//
@@ -182,8 +201,9 @@ func main() {
 	//	- overt-flake ID Server
 	//	---------------------------------------------------------
 
-	// create the hardward id provider
-	hidProvider, err := createHardwareIDProvider(config.HidType)
+	// create the hardward id provider. Note we always pass config.HardwareID as
+	// we don't know if it will be used or not (it is used when hidType = "fixed")
+	hidProvider, err := createHardwareIDProvider(config.HidType, config.HardwareID)
 	if err != nil {
 		showError("Error creating HardwareIDProvider: %s", err)
 	}
