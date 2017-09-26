@@ -70,7 +70,7 @@ func (c *client) authenticate() (err error) {
 
 		// write the auth token
 		_, err = c.conn.Write([]byte(c.authToken))
-		// @NOTE: We should probably assume the token was bad and return ErrAuthFailed
+		// @NOTE: if err != nil We should probably assume the token was bad and return ErrAuthFailed
 
 		return
 	}
