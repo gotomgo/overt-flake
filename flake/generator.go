@@ -20,17 +20,17 @@ import (
 //  ---------------------------------------------------------------------------
 //  |           48 bits         |  16 bits  |     48 bits       |  16 bits  |
 //  ---------------------------------------------------------------------------
-//  |          timestamp        |  interval |    HardwareID     | ProcessID |
+//  |          timestamp        |  sequence |    HardwareID     | ProcessID |
 //  ---------------------------------------------------------------------------
 //  Notes
 //  ---------------------------------------------------------------------------
-//  The time bits are the most signficant bits because they have the primary
-//  impact on the sort order of ids. The interval/seq # is next most significant
+//  The time bits are the most significant bits because they have the primary
+//  impact on the sort order of ids. The seq # is next most significant
 //  as it is the tie-breaker when the time portions are equivalent.
 //
 //  Note that the lower 64 bits are basically random and not specifically
-//  useful for ordering, although they play their party when the upper 64-bits
-//  are equivalent between two ideas. Again, the ordering outcome in this
+//  useful for ordering, although they play their part when the upper 64-bits
+//  are equivalent between two ids. Again, the ordering outcome in this
 //  situation is somewhat random, but generally somewhat repeatable (hardware
 //  id should be consistent and stable a vast majority of the time).
 //  ---------------------------------------------------------------------------

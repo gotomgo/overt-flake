@@ -6,7 +6,7 @@ import (
 )
 
 // overtflakeID is a wrapper around the bytes generated for an overt-flake identifer
-// 	- it implementst the OvertFlakeID interface
+// 	- it implements the OvertFlakeID interface
 type overtFlakeID struct {
 	idBytes []byte
 }
