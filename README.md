@@ -119,5 +119,5 @@ func main() {
 ## Acknowledgements
 There is almost nothing new under the sun here. The packaging and level of functionality may exceed some available packages, but the fundamental concepts I borrowed are embodied in many, many, many existing packages. I reviewed most of them and was inspired by a small number of them:
 
-* NOEQD(https://github.com/noeq/noeqd)
-* goflake(https://github.com/nmjmdr/goflake)
+* [NOEQD](https://github.com/noeq/noeqd)
+* [goflake](https://github.com/nmjmdr/goflake)
