@@ -123,11 +123,12 @@ There is almost nothing new under the sun here. The packaging and level of funct
 * [goflake](https://github.com/nmjmdr/goflake)
 
 I really loved [NOEQD's](https://github.com/noeq/noeqd) approach to the client/server interactions (SIMPLE) so
-I literally stole the code and extended it a bit. I borrowed other things from NOEQD as well. If you need 64bit identifiers
-ala Twitter Snowflake, its a great choice
+I literally stole the code and extended it a bit. I borrowed other things from NOEQD as well. If you need 64 bit identifiers
+ala Twitter Snowflake, [NOEQD](https://github.com/noeq/noeqd) is a great choice
 
 [goflake](https://github.com/nmjmdr/goflake) uses Hardware MAC IDs and produces a SHA1 of all available MAC addresses. I originally
 felt like a literal MAC address should not be part of the flake, and would need to be obsfucated (to prevent any possible system
-re-trace or fingerprint by nefarious agents) so the [goflake](https://github.com/nmjmdr/goflake) implementation struck me as the right approach
+re-trace or fingerprint by nefarious agents) so the [goflake](https://github.com/nmjmdr/goflake) implementation struck me as the right approach.
+
 I will say I am not a big fan of the 160 bit identifier (from Factual\Skuld'd) because I feel like the extra 32 bits are wasted on
 12 bits of time that will never be used, and a 16 additional bits for sequence # seems like a waste of 16 bits.
