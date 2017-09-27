@@ -131,4 +131,4 @@ felt like a literal MAC address should not be part of the flake, and would need 
 re-trace or fingerprint by nefarious agents) so the [goflake](https://github.com/nmjmdr/goflake) implementation struck me as the right approach.
 
 I will say I am not a big fan of the 160 bit identifier (from Factual\Skuld'd) because I feel like the extra 32 bits are wasted on
-12 bits of time that will never be used, and an additional 16 bits for sequence # seems like a waste of 16 bits.
+12 bits of time that will never be used, and an additional 16 bits for sequence # seems like a waste of 16 bits. As a matter of fact, 42 bits for time would be sufficient for most systems (assuming a recent epoch), and we can use the extra 6 bits for the sequence # (22 bits total) which would allow for a single node to produce ~4.2 million ids per millisecond without stalling.
