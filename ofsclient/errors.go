@@ -1,6 +1,9 @@
 package ofsclient
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	// ErrNoServers indicates that the client was not provided with any server addresses
@@ -11,3 +14,9 @@ var (
 	// considered an error
 	ErrShortRead = errors.New("Read less bytes than expected")
 )
+
+// CreateBadArgumentError creates a custom form ErrArgumentNil with the argument
+// name included in the error message
+func CreateBadArgumentError(paramName, message string, args ...interface{}) error {
+	return fmt.Errorf("The value of the argument '%s' is invalid: %s", paramName, fmt.Sprintf(message, args))
+}
