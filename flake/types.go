@@ -2,14 +2,10 @@ package flake
 
 import "math/big"
 
-// Generator is the primary interface for flake ID generation
+// Generator is the base interface for flake ID generators
 type Generator interface {
 	// Epoch returns the epoch used for overt-flake identifers
 	Epoch() int64
-	// HardwareID returns the hardware identifier used for overt-flake identifiers
-	HardwareID() HardwareID
-	// ProcessID returns the process id hosting the overt-flake Generator
-	ProcessID() int
 
 	// Get the size, in bytes, of IDs created by the generator
 	IDSize() int
@@ -23,6 +19,16 @@ type Generator interface {
 
 	// GenerateAsStream allocates and returns ids in chunks (based on the size of buffer) via a callback
 	GenerateAsStream(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error)
+}
+
+// OvertFlakeGenerator extends Generator adding overt-flake identifier specific concepts
+type OvertFlakeGenerator interface {
+	Generator
+
+	// HardwareID returns the hardware identifier used for overt-flake identifiers
+	HardwareID() HardwareID
+	// ProcessID returns the process id hosting the overt-flake Generator
+	ProcessID() int
 }
 
 // HardwareID is an alias for []byte

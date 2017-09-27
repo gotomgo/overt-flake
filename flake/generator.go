@@ -53,8 +53,8 @@ type generator struct {
 	mutex sync.Mutex
 }
 
-// NewGenerator creates an instance of generator which implements Generator
-func NewGenerator(epoch int64, hardwareID HardwareID, processID int, waitForTime int64) Generator {
+// NewOvertFlakeGenerator creates an instance of generator which implements Generator
+func NewOvertFlakeGenerator(epoch int64, hardwareID HardwareID, processID int, waitForTime int64) OvertFlakeGenerator {
 	// binary.BigEndian.Uint64 won't work on a []byte < len(8) so we need to
 	// copy our 6-byte hardwareID into the most-signficant bits
 	tempBytes := make([]byte, 8)
@@ -70,8 +70,8 @@ func NewGenerator(epoch int64, hardwareID HardwareID, processID int, waitForTime
 }
 
 // NewOvertoneEpochGenerator creates an instance of generator using the Overtone Epoch
-func NewOvertoneEpochGenerator(hardwareID HardwareID) Generator {
-	return NewGenerator(OvertoneEpochMs, hardwareID, os.Getpid(), 0)
+func NewOvertoneEpochGenerator(hardwareID HardwareID) OvertFlakeGenerator {
+	return NewOvertFlakeGenerator(OvertoneEpochMs, hardwareID, os.Getpid(), 0)
 }
 
 func (gen *generator) IDSize() int {
@@ -110,7 +110,7 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 		// allocate as many ids as available up to count
 		allocated, interval, err = gen.allocate(count)
 		if err != nil {
-			return totalAllocated, err
+			return
 		}
 
 		// calculate the delta between the interval (Unix Epoch in milliseconds)
