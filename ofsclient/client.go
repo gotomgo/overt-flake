@@ -75,6 +75,80 @@ func (c *client) authenticate() (err error) {
 	return
 }
 
+func (c *client) StreamIDBytes(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error) {
+	bufferCount := len(buffer) / c.idSize
+	if bufferCount == 0 {
+		return 0, CreateBadArgumentError("buffer", "The buffer is too small (%d bytes) to hold a single ID (%d bytes)", len(buffer), c.idSize)
+	}
+
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+
+	// on exit, if there was an error, clear the connection
+	defer func() {
+		if err != nil {
+			c.conn = nil
+		}
+	}()
+
+	// if we don't have a connection establish one
+	if c.conn == nil {
+		err = c.connect()
+		if err != nil {
+			return
+		}
+	}
+
+	// create the command header, which is the count of ids
+	countBytes := make([]byte, 4)
+
+	for count > 0 {
+		var readCount int
+
+		// max # if ids we should read
+		if count-bufferCount > 0 {
+			readCount = bufferCount
+		} else {
+			readCount = count
+		}
+
+		binary.BigEndian.PutUint32(countBytes, uint32(readCount))
+
+		// write the count
+		_, err = c.conn.Write(countBytes)
+		if err != nil {
+			return
+		}
+
+		var bytesRead int
+		// the number of bytes we expect to read
+		expectedBytes := readCount * c.idSize
+
+		// read the # of bytes for readCount ids
+		bytesRead, err = c.conn.Read(buffer[0:expectedBytes])
+		if err != nil {
+			return totalAllocated, err
+		}
+
+		// did we read all the byes we expected?
+		if bytesRead != expectedBytes {
+			return totalAllocated, ErrShortRead
+		}
+
+		// update our counts prior to callback
+		totalAllocated += readCount
+		count -= readCount
+
+		// stream readCount ids back to caller
+		err = callback(readCount, buffer)
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+
 // GenerateIDBytes generates count number of overt-flake identifiers in raw/byte form
 func (c *client) GenerateIDBytes(count int) (ids []byte, err error) {
 	c.mutex.Lock()
