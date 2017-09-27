@@ -6,6 +6,7 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 1. Identifiers are 128-bits
 2. External configuration information such as worker id and data-center id are not needed. Machine identifiers, both stable and unstable are used instead
 3. The Overtone Epoch (Jan 1, 2017) is the default epoch used. The code allows for any epoch, including Twitter Epoch or Unix Epoch. The primary reason is that 1/1/2017 is a Sunday (not important for ID generation) and nostalgically, it is also the day technical development of Overtone began.
+4. The server is not specific to overt-flake identifiers. Write your own implementation of flake.Generator and plug it in to the server.
 
 ## Over-Flake ID Format
 
@@ -114,3 +115,9 @@ func main() {
 	client.Close()
 }
 ```
+
+## Acknowledgements
+There is almost nothing new under the sun here. The packaging and level of functionality may exceed some available packages, but the fundamental concepts I borrowed are embodied in many, many, many existing packages. I reviewed most of them and was inspired by a small number of them:
+
+* NOEQD(https://github.com/noeq/noeqd)
+* goflake(https://github.com/nmjmdr/goflake)
