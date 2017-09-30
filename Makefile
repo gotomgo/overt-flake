@@ -53,7 +53,7 @@ help:
 	@echo '    clean-releases     Remove releases only.'
 	@echo '    clean-vendor       Remove content of the vendor directory.'
 	@echo '    tools              Install tools needed by the project.'
-	@echo '    deps               Download and install build time dependencies.'
+	@echo '    deps               add oustide vendor dependencies'
 	@echo '    test               Run unit tests.'
 	@echo '    coverage           Report code tests coverage.'
 	@echo '    vet                Run go vet.'
@@ -68,7 +68,8 @@ help:
 	@echo '    release            Package and sing project for release.'
 	@echo '    package-release    Package release and compress artifacts.'
 	@echo '    check              Verify compiled binary.'
-	@echo '    vendor             Update and save project build time dependencies.'
+	@echo '    vendor             Sync vendor dependencies'
+	@echo '    vendor-list        Show project packages with status'
 	@echo '    version            Display Go version and App version'
 	@echo '    docker_build       Build a binary for use with Docker (Linux-Amd64)'
 	@echo '    docker-image       Build a docker image'
@@ -104,11 +105,11 @@ tools:
 	go get github.com/golang/lint/golint
 	go get github.com/axw/gocov/gocov
 	go get github.com/matm/gocov-html
-	go get github.com/tools/godep
+	go get github.com/kardianos/govendor
 	go get github.com/mitchellh/gox
 
 deps:
-	godep restore
+	govendor add +outside
 
 test: deps
 	go test -v ./...
@@ -184,7 +185,10 @@ check:
 	fi
 
 vendor: deps
-	godep save
+	govendor sync
+
+vendor-list:
+	govendor list
 
 version:
 	@go version
