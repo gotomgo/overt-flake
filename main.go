@@ -48,7 +48,7 @@ func showUsage() {
 
 func showAppVersion() {
 	fmt.Fprintf(os.Stderr, `ofsrvr: %s, Runtime: %s, Compiler: %s, Copyright © 2017 Overtone Studios, Inc.`,
-		"0.5.0",
+		"0.5.1",
 		runtime.Compiler,
 		runtime.Version())
 	fmt.Fprintln(os.Stderr, "")
@@ -93,7 +93,7 @@ func createOvertFlakeIDGenerator(genType string, epoch int64, hardwareID flake.H
 
 	switch strings.ToLower(genType) {
 	case "default":
-		generator = flake.NewGenerator(epoch, hardwareID, os.Getpid(), waitForTime)
+		generator = flake.NewOvertFlakeGenerator(epoch, hardwareID, os.Getpid(), waitForTime)
 		break
 	default:
 		showErrorWithUsage("Unsupported type for Generator: %s", genType)
