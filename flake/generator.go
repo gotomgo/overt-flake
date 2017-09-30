@@ -14,7 +14,7 @@ import (
 //
 //  [0:6]   48 bits | Upper 48 bits of timestamp (milliseconds since the epoch)
 //  [6:8]   16 bits | a per-interval sequence # (interval == 1 millisecond)
-//  [9:14]  48 bits | a hardware id
+//  [8:14]  48 bits | a hardware id
 //  [14:16] 16 bits | process ID
 //
 //  ---------------------------------------------------------------------------
