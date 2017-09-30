@@ -14,21 +14,23 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 //  ---------------------------------------------------------------------------
 //  Layout - Big Endian
 //  ---------------------------------------------------------------------------
+//
 //  [0:6]   48 bits | Upper 48 bits of timestamp (milliseconds since the epoch)
 //  [6:8]   16 bits | a per-interval sequence # (interval == 1 millisecond)
 //  [9:14]  48 bits | a hardware id
 //  [14:16] 16 bits | process ID
+//
 //  ---------------------------------------------------------------------------
-//  | 0 | 1 | 2 | 3 | 4 | 5 | 6 |  7  |  8  | 9 | A | B | C | D |  E  |  F  |
+//  | 0 | 1 | 2 | 3 | 4 | 5 |  6  |  7  |  8  | 9 | A | B | C | D |  E  |  F  |
 //  ---------------------------------------------------------------------------
-//  |           48 bits         |  16 bits  |     48 bits       |  16 bits  |
+//  |           48 bits     |  16 bits  |         48 bits         |  16 bits  |
 //  ---------------------------------------------------------------------------
-//  |          timestamp        |  sequence |    HardwareID     | ProcessID |
+//  |          timestamp    |  sequence |        HardwareID       | ProcessID |
 //  ---------------------------------------------------------------------------
 //  Notes
 //  ---------------------------------------------------------------------------
 //  The time bits are the most significant bits because they have the primary
-//  impact on the sort order of ids. The seq # is next most significant
+//  impact on the sort order of ids. The sequence # is next most significant
 //  as it is the tie-breaker when the time portions are equivalent.
 //
 //  Note that the lower 64 bits are basically random and not specifically
@@ -41,7 +43,7 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 
 ## Server Console Usage
 
-executing ofsserver -help shows the following usage:
+executing ofsrvr -help shows the following usage:
 
 ```
 ofsrvr: 0.3.1, Runtime: gc, Compiler: go1.8.3, Copyright © 2017 Overtone Studios, Inc.
