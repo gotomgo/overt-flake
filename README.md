@@ -6,7 +6,8 @@ Overt-flake is a Flake ID generator and server (written in GO) along the lines o
 1. Identifiers are 128-bits
 2. External configuration information such as worker id and data-center id are not needed. Machine identifiers, both stable and unstable are used instead
 3. The Overtone Epoch (Jan 1, 2017) is the default epoch used. The code allows for any epoch, including Twitter Epoch or Unix Epoch. The primary reason is that 1/1/2017 is a Sunday (not important for ID generation) and nostalgically, it is also the day technical development of Overtone began.
-4. The server is not specific to overt-flake identifiers. Write your own implementation of flake.Generator and plug it in to the server.
+4. The server is not specific to overt-flake identifiers. Write your own implementation of flake.Generator and plug it in to the server. A
+Twitter Snowflake compatible ID generator is included
 
 ## Over-Flake ID Format
 
@@ -126,7 +127,8 @@ There is almost nothing new under the sun here. The packaging and level of funct
 
 I really loved [NOEQD's](https://github.com/noeq/noeqd) approach to the client/server interactions (SIMPLE) so
 I literally stole the code and extended it a bit. I borrowed other things from NOEQD as well. If you need 64 bit identifiers
-ala Twitter Snowflake, [NOEQD](https://github.com/noeq/noeqd) is a great choice
+ala Twitter Snowflake, [NOEQD](https://github.com/noeq/noeqd) is a great choice. An even better choice would be to use the
+OvertFlake server with a NOEQD/Twitter 64-bit id generator!
 
 [goflake](https://github.com/nmjmdr/goflake) uses Hardware MAC IDs and produces a SHA1 of all available MAC addresses. I originally
 felt like a literal MAC address should not be part of the flake, and would need to be obsfucated (to prevent any possible system
