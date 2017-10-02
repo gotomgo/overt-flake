@@ -24,7 +24,7 @@ Options:
     -config          specify a path to a configuration file                             default=""
     -hid             specify a hardware id to use when -hidype == "fixed"               default=""
     -machineid       specify a machine id to use when -gentype == "twitter"             default=0
-		-datacenterid    specify a data center id to use when -gentype == datacenterid      default=0
+    -datacenterid    specify a data center id to use when -gentype == datacenterid      default=0
 
 Notes:
 * arguments specified on the command-line override values specified in -config file
