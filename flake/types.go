@@ -2,13 +2,45 @@ package flake
 
 import "math/big"
 
-// Generator is the base interface for flake ID generators
-type Generator interface {
-	// Epoch returns the epoch used for overt-flake identifers
+// IDGenerator encapsulates the data and functionality that is
+// specific to ID generation, and is used by a Generator to create actual
+// flake IDs.
+type IDGenerator interface {
+	SynthesizeID(buffer []byte, index int, time int64, sequence uint64) int
+
+	// Epoch returns the epoch used for the identifers created by the generator
 	Epoch() int64
 
 	// Get the size, in bytes, of IDs created by the generator
 	IDSize() int
+
+	// SequenceBitCount returns the # of bits used for the sequence #
+	// For over-flake style identifiers, values in the range 12-22 make
+	// sense with 16 being the default.
+	SequenceBitCount() uint64
+
+	// SequenceBitMask returns the bitmask for SequenceBitCount() and also
+	// acts as the maximum value for a sequence #
+	//
+	// The mask can be calculated as follows:
+	// uint64(int64(-1) ^ (int64(-1) << gen.SequenceBitCount()))
+	SequenceBitMask() uint64
+
+	// MaxSequenceNumber is an alias for SequenceBitMask that is used when we
+	// want to refer to it as an absolute # rather than a mask. For readability
+	MaxSequenceNumber() uint64
+}
+
+// Generator is the base interface for flake ID generators and as a convienence
+// is a superset of IDGenerator. A typical Generator implementation will act
+// as a proxy and forward all IDGenerator methods to its underlying
+// IDGenerator
+type Generator interface {
+	IDGenerator
+
+	// Synthesizer is the component that synthesizes flake ids from raw
+	// components
+	IDGenerator() IDGenerator
 
 	// LastAllocatedTime is the last Unix Epoch value that one or more ids
 	// are known to have been generated
@@ -21,9 +53,9 @@ type Generator interface {
 	GenerateAsStream(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error)
 }
 
-// OvertFlakeGenerator extends Generator adding overt-flake identifier specific concepts
-type OvertFlakeGenerator interface {
-	Generator
+// OvertFlakeIDGenerator extends IDGenerator adding overt-flake identifier specific concepts
+type OvertFlakeIDGenerator interface {
+	IDGenerator
 
 	// HardwareID returns the hardware identifier used for overt-flake identifiers
 	HardwareID() HardwareID

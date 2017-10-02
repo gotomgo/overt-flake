@@ -1,105 +1,87 @@
 package flake
 
 import (
-	"encoding/binary"
-	"os"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
-//  ---------------------------------------------------------------------------
-//  Layout - Big Endian
-//  ---------------------------------------------------------------------------
+// generator is an implementtion of Generator and acts as a host for an
+// IDGenerator which creates and writes the identifiers for the Generator,
+// while the Generator worries about logic around time intervals and allocating
+// sequence #'s', and providing APIs for generating identifiers in bulk.
 //
-//  [0:6]   48 bits | Upper 48 bits of timestamp (milliseconds since the epoch)
-//  [6:8]   16 bits | a per-interval sequence # (interval == 1 millisecond)
-//  [8:14]  48 bits | a hardware id
-//  [14:16] 16 bits | process ID
+// For convienence, all implementations of Generator also implement IDGenerator,
+// and for generator, all IDGenerator methods are proxied to the actual
+// implementation of IDGenerator
 //
-//  ---------------------------------------------------------------------------
-//  | 0 | 1 | 2 | 3 | 4 | 5 |  6  |  7  |  8  | 9 | A | B | C | D |  E  |  F  |
-//  ---------------------------------------------------------------------------
-//  |           48 bits     |  16 bits  |         48 bits         |  16 bits  |
-//  ---------------------------------------------------------------------------
-//  |          timestamp    |  sequence |        HardwareID       | ProcessID |
-//  ---------------------------------------------------------------------------
-//  Notes
-//  ---------------------------------------------------------------------------
-//  The time bits are the most significant bits because they have the primary
-//  impact on the sort order of ids. The sequence # is next most significant
-//  as it is the tie-breaker when the time portions are equivalent.
-//
-//  Note that the lower 64 bits are basically random and not specifically
-//  useful for ordering, although they play their part when the upper 64-bits
-//  are equivalent between two ids. Again, the ordering outcome in this
-//  situation is somewhat random, but generally somewhat repeatable (hardware
-//  id should be consistent and stable a vast majority of the time).
-//  ---------------------------------------------------------------------------
-
-var sequenceBits uint64 = 16
-var sequenceMask = uint64(int64(-1) ^ (int64(-1) << sequenceBits))
-var maxSequenceNumber = uint64(^sequenceMask)
-
-// generator is an implementtion of Generator
+//	- idGen is the IDGenerator that forms and writes the ID on the generator's
+//		behalf
+//	lastTime is the time interval when ids were last allocated. This value can
+// 		be saved periodically to know the minimum re-start time if the server
+//		crashes and needs to be restarted
+//	sequence is the sequence # for the current interval. It resets each
+//		millisecond (but only if 1 or more ids are being generated during
+//		the interval)
 type generator struct {
-	epoch      int64
-	hardwareID HardwareID
-	processID  int
-	machineID  uint64
+	idGen IDGenerator
 
-	lastTime          int64
-	lastAllocatedTime int64
-	sequence          uint64
+	lastTime int64
+	sequence uint64
 
 	mutex sync.Mutex
 }
 
-// NewOvertFlakeGenerator creates an instance of generator which implements Generator
-func NewOvertFlakeGenerator(epoch int64, hardwareID HardwareID, processID int, waitForTime int64) OvertFlakeGenerator {
-	// binary.BigEndian.Uint64 won't work on a []byte < len(8) so we need to
-	// copy our 6-byte hardwareID into the most-signficant bits
-	tempBytes := make([]byte, 8)
-	copy(tempBytes[0:6], hardwareID[0:6])
-
-	return &generator{
-		epoch:      epoch,
-		hardwareID: hardwareID,
-		processID:  processID & 0xFFFF,
-		machineID:  binary.BigEndian.Uint64(tempBytes) | uint64(processID&0xFFFF),
-		lastTime:   waitForTime,
-	}
-}
-
-// NewOvertoneEpochGenerator creates an instance of generator using the Overtone Epoch
-func NewOvertoneEpochGenerator(hardwareID HardwareID) OvertFlakeGenerator {
-	return NewOvertFlakeGenerator(OvertoneEpochMs, hardwareID, os.Getpid(), 0)
-}
-
+// IDSize implements IDGenerator.IDSize() and is a proxy to the underlying
+// IDGenerator
 func (gen *generator) IDSize() int {
-	return OvertFlakeIDLength
+	return gen.idGen.IDSize()
 }
 
+// SequenceBitCount implements IDGenerator.SequenceBitCount() and is a proxy to
+// the underlying IDGenerator
+func (gen *generator) SequenceBitCount() uint64 {
+	return gen.idGen.SequenceBitCount()
+}
+
+// SequenceBitMask implements IDGenerator.SequenceBitMask() and is a proxy to
+// the underlying IDGenerator
+func (gen *generator) SequenceBitMask() uint64 {
+	return gen.idGen.SequenceBitMask()
+}
+
+// MaxSequenceNumber implements IDGenerator.MaxSequenceNumber() and is a proxy to
+// the underlying IDGenerator
+func (gen *generator) MaxSequenceNumber() uint64 {
+	return gen.idGen.MaxSequenceNumber()
+}
+
+// IDGenerator is the IDGenerator used by the generator
+func (gen *generator) IDGenerator() IDGenerator {
+	return gen.idGen
+}
+
+// SynthesizeID uses the IDGenerator to construct an write an id to a buffer
+func (gen *generator) SynthesizeID(buffer []byte, index int, time int64, sequence uint64) int {
+	return gen.idGen.SynthesizeID(buffer, index, time, sequence)
+}
+
+// Epoch returns the epoch used for the identifers created by the generator
+// (via the IDGenerator)
 func (gen *generator) Epoch() int64 {
-	return gen.epoch
+	return gen.idGen.Epoch()
 }
 
-func (gen *generator) HardwareID() HardwareID {
-	return gen.hardwareID
-}
-
-func (gen *generator) ProcessID() int {
-	return gen.processID
-}
-
+// LastAllocatedTime is the last Unix Epoch value that one or more ids
+// are known to have been generated
 func (gen *generator) LastAllocatedTime() int64 {
-	// use the atomic api for both reads and writes of this value so that we do not
-	// need to incur the overhead of the mutex or create additional contention
-	return atomic.LoadInt64(&gen.lastAllocatedTime)
+	gen.mutex.Lock()
+	defer gen.mutex.Unlock()
+
+	return gen.lastTime
 }
 
 func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(int, []byte) error) (totalAllocated int, err error) {
-	if len(buffer) < OvertFlakeIDLength {
+	if len(buffer) < gen.IDSize() {
 		return 0, ErrBufferTooSmall
 	}
 
@@ -115,27 +97,20 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 			return
 		}
 
-		// calculate the delta between the interval (Unix Epoch in milliseconds)
-		// and the epoch being used for id generation
-		delta := uint64((interval - gen.epoch) << 16)
-
 		// for each ID that was allocated, write the bytes for the ID to
 		// the results array
 		for j := uint64(0); j < allocated; j++ {
-			var upper = delta | (j & sequenceMask)
-			binary.BigEndian.PutUint64(buffer[index:index+8], upper)
-			binary.BigEndian.PutUint64(buffer[index+8:index+16], gen.machineID)
-			index += 16
+			index += gen.SynthesizeID(buffer, index, interval, j)
 
 			// buffer is full
 			if index >= len(buffer) {
-				err = callback(index/16, buffer)
+				err = callback(index/gen.IDSize(), buffer)
 				if err != nil {
 					return
 				}
 
 				// more were delivered so update our return value
-				totalAllocated += int(index / 16)
+				totalAllocated += int(index / gen.IDSize())
 
 				// back to beginning of the buffer
 				index = 0
@@ -144,13 +119,13 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 
 		// partial buffer fill
 		if index > 0 {
-			err = callback(index/16, buffer)
+			err = callback(index/gen.IDSize(), buffer)
 			if err != nil {
 				return
 			}
 
 			// more were delivered so update our return value
-			totalAllocated += int(index / 16)
+			totalAllocated += int(index / gen.IDSize())
 
 			// back to beginning of the buffer
 			index = 0
@@ -166,7 +141,7 @@ func (gen *generator) GenerateAsStream(count int, buffer []byte, callback func(i
 // each id into a contiguous []byte
 func (gen *generator) Generate(count int) (results []byte, err error) {
 	// allocate a buffer that will hold count IDs
-	results = make([]byte, OvertFlakeIDLength*count)
+	results = make([]byte, gen.IDSize()*count)
 
 	var allocated int
 
@@ -187,7 +162,7 @@ func (gen *generator) Generate(count int) (results []byte, err error) {
 // allocate does all the magic of time and sequence management. It does not
 // perfomm the generation of the ids, but provides the data required to do so
 func (gen *generator) allocate(count int) (uint64, int64, error) {
-	if uint64(count) > maxSequenceNumber {
+	if uint64(count) > gen.MaxSequenceNumber() {
 		return 0, 0, ErrTooManyRequested
 	}
 
@@ -204,7 +179,6 @@ func (gen *generator) allocate(count int) (uint64, int64, error) {
 	}
 
 	if gen.lastTime != current {
-		gen.lastTime = current
 		gen.sequence = 0
 	} else {
 		// When all the ids have been allocated for this interval then we end up
@@ -216,22 +190,18 @@ func (gen *generator) allocate(count int) (uint64, int64, error) {
 		}
 	}
 
+	gen.lastTime = current
+
 	// allocated the request # of items, or whatever is remaining for this cycle
 	var allocated uint64
-	if uint64(count) > gen.sequence-sequenceMask {
-		allocated = gen.sequence - sequenceMask
+	if uint64(count) > gen.sequence-gen.MaxSequenceNumber() {
+		allocated = gen.sequence - gen.MaxSequenceNumber()
 	} else {
 		allocated = uint64(count)
 	}
 
 	// advance the sequence for the # of items allocated
-	gen.sequence = (gen.sequence + allocated) & sequenceMask
-
-	// remember the last time interval where we allocated one or more ids.
-	//
-	// Note that although we own the mutex, the reader uses atomic so
-	// we (the writer) do the same
-	atomic.StoreInt64(&gen.lastAllocatedTime, gen.lastTime)
+	gen.sequence = (gen.sequence + allocated) & gen.SequenceBitMask()
 
 	return allocated, current, nil
 }
