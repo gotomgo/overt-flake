@@ -23,6 +23,8 @@ Options:
     -auth            specify the sequence of characters that make up the auth token     default=""
     -config          specify a path to a configuration file                             default=""
     -hid             specify a hardware id to use when -hidype == "fixed"               default=""
+    -machineid       specify a machine id to use when -gentype == "twitter"             default=0
+		-datacenterid    specify a data center id to use when -gentype == datacenterid      default=0
 
 Notes:
 * arguments specified on the command-line override values specified in -config file
@@ -35,6 +37,7 @@ Hid Types:
 
 Generator Types:
     default          the standard overt-flake ID generator
+    twitter          Twitter snowflake ID generator
 
 Common Options:
     -help, --help    Show this message
@@ -48,7 +51,7 @@ func showUsage() {
 
 func showAppVersion() {
 	fmt.Fprintf(os.Stderr, `ofsrvr: %s, Runtime: %s, Compiler: %s, Copyright © 2017 Overtone Studios, Inc.`,
-		"0.5.1",
+		"0.6.0",
 		runtime.Compiler,
 		runtime.Version())
 	fmt.Fprintln(os.Stderr, "")
@@ -88,12 +91,22 @@ func createHardwareIDProvider(hidType string, fixedID []byte) (flake.HardwareIDP
 	return hidProvider, nil
 }
 
-func createOvertFlakeIDGenerator(genType string, epoch int64, hardwareID flake.HardwareID, waitForTime int64) (flake.Generator, error) {
+func createOvertFlakeIDGenerator(
+	genType string,
+	epoch int64,
+	hardwareID flake.HardwareID,
+	waitForTime int64,
+	machineid int64,
+	datacenterid int64,
+) (flake.Generator, error) {
 	var generator flake.Generator
 
 	switch strings.ToLower(genType) {
 	case "default":
 		generator = flake.NewOvertFlakeGenerator(epoch, hardwareID, os.Getpid(), waitForTime)
+		break
+	case "twitter":
+		generator = flake.NewTwitterGenerator(machineid, datacenterid, waitForTime)
 		break
 	default:
 		showErrorWithUsage("Unsupported type for Generator: %s", genType)
@@ -112,6 +125,8 @@ func main() {
 	var argEpoch int64
 	var argAuthToken string
 	var argHardwareID string
+	var argMachineID int64
+	var argDataCenterID int64
 
 	// other args
 	var waitForTime int64
@@ -128,6 +143,8 @@ func main() {
 	flag.BoolVar(&showVersion, "v", false, "print ofsrvr version information")
 	flag.StringVar(&configPath, "config", "", "the path to a ofs server configuration file")
 	flag.StringVar(&argHardwareID, "hid", "", "the fixed hardware id")
+	flag.Int64Var(&argMachineID, "machineid", 0, "the machineid used for twitter snowflake id's")
+	flag.Int64Var(&argDataCenterID, "datacenterid", 0, "the datacenterid used for twitter snowflake id's")
 
 	flag.Usage = showUsage
 	flag.Parse()
@@ -193,6 +210,14 @@ func main() {
 		config.HardwareID = []byte(argHardwareID)
 	}
 
+	if argMachineID > 0 {
+		config.MachineID = argMachineID
+	}
+
+	if argDataCenterID > 0 {
+		config.DataCenterID = argDataCenterID
+	}
+
 	//	---------------------------------------------------------
 	//	Create the components needed to run the server
 	//
@@ -215,7 +240,7 @@ func main() {
 	}
 
 	// create an ID generator
-	generator, err := createOvertFlakeIDGenerator(config.GenType, config.Epoch, hid, waitForTime)
+	generator, err := createOvertFlakeIDGenerator(config.GenType, config.Epoch, hid, waitForTime, config.MachineID, config.DataCenterID)
 	if err != nil {
 		showError("Error creating Overt-Flake generator: %s", err)
 	}
