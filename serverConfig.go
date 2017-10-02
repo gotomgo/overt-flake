@@ -9,12 +9,14 @@ import (
 // serverConfig is a yaml file representation of the configuration for an
 // overt-flake ID server
 type serverConfig struct {
-	IPAddr     string `yaml:"ipAddr"`
-	Epoch      int64  `yaml:"epoch"`
-	HidType    string `yaml:"hidType"`
-	GenType    string `yaml:"genType"`
-	AuthToken  string `yaml:"authToken"`
-	HardwareID []byte `yaml:"hardwareId"`
+	IPAddr       string `yaml:"ipAddr"`
+	Epoch        int64  `yaml:"epoch"`
+	HidType      string `yaml:"hidType"`
+	GenType      string `yaml:"genType"`
+	AuthToken    string `yaml:"authToken"`
+	HardwareID   []byte `yaml:"hardwareId"`
+	MachineID    int64  `yaml:"machineId"`
+	DataCenterID int64  `yaml:"dataCenterId"`
 }
 
 // loadConfig loads bytes from a file and calls a function to
