@@ -121,9 +121,12 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 					return err
 				}
 				hasAuthed = true
-			} else {
-				return ErrInvalidReauthentication
+
+				// on the the next request
+				continue
 			}
+
+			return ErrInvalidReauthentication
 		}
 
 		_, err = server.generator.GenerateAsStream(int(count), buffer, func(allocated int, ids []byte) error {
@@ -154,7 +157,7 @@ func (server *OvertFlakeServer) doAuth(reader io.Reader, tokenCount uint8) (err 
 	tokenBytes := make([]byte, tokenCount&0xFF)
 	_, err = io.ReadFull(reader, tokenBytes)
 	if err != nil {
-		return err
+		return
 	}
 
 	if len(server.authToken) > 0 {
@@ -163,7 +166,7 @@ func (server *OvertFlakeServer) doAuth(reader io.Reader, tokenCount uint8) (err 
 		}
 	}
 
-	return nil
+	return
 }
 
 func (server *OvertFlakeServer) authenticateClient(reader io.Reader) error {
