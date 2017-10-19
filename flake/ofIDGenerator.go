@@ -50,6 +50,10 @@ type overtFlakeIDSynthesizer struct {
 
 // NewOvertFlakeIDSynthesizer creates an instance of generator (which implements Generator) and
 // allows the # of sequence bits to be specified (16 is standard)
+//
+// Notes
+//
+// Setting a value of sequenceBits > 22 will result in unacceptable time truncation
 func NewOvertFlakeIDSynthesizer(epoch int64, sequenceBits uint64, hardwareID HardwareID, processID int) OvertFlakeIDGenerator {
 	// binary.BigEndian.Uint64 won't work on a []byte < len(8) so we need to
 	// copy our 6-byte hardwareID into the most-signficant bits
@@ -68,6 +72,10 @@ func NewOvertFlakeIDSynthesizer(epoch int64, sequenceBits uint64, hardwareID Har
 
 // NewOvertFlakeGeneratorWithBits creates an instance of generator (which implements Generator.) this
 // "constructor" allows the # of sequence bits to be specified
+//
+// Notes
+//
+// Setting a value of seqBits > 22 will result in unacceptable time truncation
 func NewOvertFlakeGeneratorWithBits(epoch int64, hardwareID HardwareID, processID int, waitForTime int64, seqBits uint64) Generator {
 	// binary.BigEndian.Uint64 won't work on a []byte < len(8) so we need to
 	// copy our 6-byte hardwareID into the most-signficant bits
