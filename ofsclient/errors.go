@@ -13,6 +13,8 @@ var (
 	// ErrShortRead indicates that the client read less bytes than it expected and it was
 	// considered an error
 	ErrShortRead = errors.New("Read less bytes than expected")
+	// ErrNoServerConnection indicates that a server connection could not be established
+	ErrNoServerConnection = errors.New("No ofsrvr connection could be established")
 )
 
 // CreateBadArgumentError creates a custom form ErrArgumentNil with the argument
