@@ -20,7 +20,27 @@ func NewOvertFlakeClient(authToken string, servers ...string) (OvertFlakeClient,
 		return nil, ErrAuthTokenTooLarge
 	}
 
-	return &overtFlakeClient{client: client{authToken: authToken, servers: servers, idSize: flake.OvertFlakeIDLength}}, nil
+	serverEntrys := make([]ServerEntry, len(servers))
+	for index, server := range servers {
+		serverEntrys[index] = ServerEntry{Server: server, Auth: authToken}
+	}
+
+	return &overtFlakeClient{client: client{servers: serverEntrys, idSize: flake.OvertFlakeIDLength}}, nil
+}
+
+// NewOvertFlakeClientWithConfig creates an instance of overtFlakeClient which implements OvertFlakeClient
+func NewOvertFlakeClientWithConfig(config *Config) (OvertFlakeClient, error) {
+	if len(config.Servers) == 0 {
+		return nil, ErrNoServers
+	}
+
+	for _, server := range config.Servers {
+		if len(server.Auth) > 255 {
+			return nil, ErrAuthTokenTooLarge
+		}
+	}
+
+	return &overtFlakeClient{client: client{servers: config.Servers, idSize: flake.OvertFlakeIDLength}}, nil
 }
 
 // StreamFlakes generates ids in chunks passing them back to the caller as they arrive, via buffer
