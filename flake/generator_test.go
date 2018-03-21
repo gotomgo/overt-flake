@@ -98,4 +98,21 @@ func TestGenerateStreamIDs(t *testing.T) {
 	assert.Equal(t, 3, totalAllocated, "Expecting total # of ids generated to == %d, not %d", 3, totalAllocated)
 	assert.Equal(t, 2, called, "Expecting total # of callbacks to be %d, not %d", 3, called)
 
+	buffer = make([]byte, OvertFlakeIDLength*64)
+	called = 0
+
+	// We are requesting 3 with a buffer that can hold 2, so two callbacks are expected with
+	totalAllocated, err = gen.GenerateAsStream(64, buffer, func(allocated int, ids []byte) error {
+		switch called {
+		case 0:
+			assert.Equal(t, 64, allocated, "Expecting 1st callback to have % ids, not %d", 64, allocated)
+		case 1:
+			assert.Fail(t, "Not expecting 2nd callback")
+		}
+		called++
+		return nil
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, 64, totalAllocated, "Expecting total # of ids generated to == %d, not %d", 64, totalAllocated)
+	assert.Equal(t, 1, called, "Expecting total # of callbacks to be %d, not %d", 1, called)
 }
