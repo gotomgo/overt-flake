@@ -2,30 +2,33 @@ package ofsclient
 
 import (
 	"encoding/binary"
-	"math/rand"
+	"fmt"
+	"io"
 	"net"
 	"sync"
 )
 
 type client struct {
-	mutex     sync.Mutex
-	conn      net.Conn
-	servers   []string
-	authToken string
-	idSize    int
+	mutex       sync.Mutex
+	conn        net.Conn
+	servers     []ServerEntry
+	idSize      int
+	serverIndex int
 }
 
 // NewClient creates an instance of client which implements Client
-func NewClient(authToken string, idSize int, servers ...string) (Client, error) {
+func NewClient(idSize int, servers []ServerEntry) (Client, error) {
 	if len(servers) == 0 {
 		return nil, ErrNoServers
 	}
 
-	if len(authToken) > 255 {
-		return nil, ErrAuthTokenTooLarge
+	for _, server := range servers {
+		if len(server.Auth) > 255 {
+			return nil, ErrAuthTokenTooLarge
+		}
 	}
 
-	return &client{authToken: authToken, servers: servers, idSize: idSize}, nil
+	return &client{servers: servers, idSize: idSize}, nil
 }
 
 func (c *client) Close() {
@@ -38,27 +41,34 @@ func (c *client) Close() {
 // connect selects an available server endpoint and establishes a connection
 // and initiates authentication
 func (c *client) connect() (err error) {
-	// select a server
-	n := rand.Intn(len(c.servers))
+	// server entries are assumed to be priority ordered
+	for index, server := range c.servers {
+		// connect to server
+		c.conn, err = net.Dial("tcp", server.Server)
+		if err != nil {
+			continue
+		}
 
-	// connect to server
-	c.conn, err = net.Dial("tcp", c.servers[n])
-	if err != nil {
-		return
+		// authenticate (as necessary)
+		err = c.authenticate(server.Auth)
+		// connected and auth'ed? excellent
+		if err == nil {
+			c.serverIndex = index
+			return nil
+		}
 	}
 
-	// authenticate (as necessary)
-	return c.authenticate()
+	return ErrNoServerConnection
 }
 
 // authenticate writes an authentication header and auth token to the server IFF
 // len(client.authToken) > 0
-func (c *client) authenticate() (err error) {
+func (c *client) authenticate(authToken string) (err error) {
 	// do we need to auth?
-	if len(c.authToken) > 0 {
+	if len(authToken) > 0 {
 		// create the header 0xFFFFFFnn where nn is the length of the auth token
 		authBytes := make([]byte, 4)
-		binary.BigEndian.PutUint32(authBytes[0:4], uint32(0xFFFFFF00|len(c.authToken)))
+		binary.BigEndian.PutUint32(authBytes[0:4], uint32(0xFFFFFF00|len(authToken)))
 
 		// write the auth header
 		_, err = c.conn.Write(authBytes)
@@ -67,7 +77,7 @@ func (c *client) authenticate() (err error) {
 		}
 
 		// write the auth token
-		_, err = c.conn.Write([]byte(c.authToken))
+		_, err = c.conn.Write([]byte(authToken))
 		// @NOTE: if err != nil We should probably assume the token was bad and return ErrAuthFailed
 
 		return
@@ -125,7 +135,7 @@ func (c *client) StreamIDBytes(count int, buffer []byte, callback func(int, []by
 		expectedBytes := readCount * c.idSize
 
 		// read the # of bytes for readCount ids
-		bytesRead, err = c.conn.Read(buffer[0:expectedBytes])
+		bytesRead, err = io.ReadFull(c.conn, buffer[0:expectedBytes])
 		if err != nil {
 			return totalAllocated, err
 		}
@@ -184,14 +194,18 @@ func (c *client) GenerateIDBytes(count int) (ids []byte, err error) {
 
 	// create a bytes buffer to accumulate the ids
 	ids = make([]byte, expectedBytes)
+
+	var bytesRead int
+
 	// read the ids
-	bytesRead, err := c.conn.Read(ids)
+	bytesRead, err = io.ReadFull(c.conn, ids)
 	if err != nil {
 		return
 	}
 
 	// did we read all the byes we expected?
 	if bytesRead != expectedBytes {
+		fmt.Printf("Expected %d bytes but only read %d for id.Size %d\n", expectedBytes, bytesRead, c.idSize)
 		return nil, ErrShortRead
 	}
 
