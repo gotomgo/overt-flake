@@ -2,6 +2,7 @@ package flake
 
 import (
 	"encoding/binary"
+	"fmt"
 	"os"
 	"testing"
 
@@ -66,7 +67,8 @@ func TestGenerateID(t *testing.T) {
 
 func TestGenerateStreamIDs(t *testing.T) {
 	// Create a generator
-	gen := NewOvertFlakeGenerator(OvertoneEpochMs, testHardwareID, 42, 0)
+	// gen := NewOvertFlakeGenerator(OvertoneEpochMs, testHardwareID, 42, 0)
+	gen := NewOvertFlakeGenerator53(testHardwareID, 42, 0)
 
 	// Create a buffer which forces the stream to provide them 1 at a time
 	buffer := make([]byte, OvertFlakeIDLength)
@@ -78,6 +80,10 @@ func TestGenerateStreamIDs(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 3, totalAllocated, "Expecting total # of ids generated to == %d, not %d", 3, totalAllocated)
 	assert.Equal(t, 3, called, "Expecting total # of callbacks to be %d, not %d", 3, called)
+
+	ofid := NewOvertFlakeID(buffer[0:16])
+	assert.Equal(t, uint64(0), ofid.Upper()&0xFFE0000000000000)
+	fmt.Printf("%X\n", ofid.Upper())
 
 	// Create a buffer which forces the stream to provide them 2 at a time
 	buffer = make([]byte, OvertFlakeIDLength*2)
