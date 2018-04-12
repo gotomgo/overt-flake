@@ -43,6 +43,7 @@ type overtFlakeIDSynthesizer struct {
 	epoch        int64
 	sequenceBits uint64
 	sequenceMask uint64
+	upperMask    uint64
 	hardwareID   HardwareID
 	processID    int
 	machineID    uint64
@@ -64,6 +65,7 @@ func NewOvertFlakeIDSynthesizer(epoch int64, sequenceBits uint64, hardwareID Har
 		epoch:        epoch,
 		sequenceBits: sequenceBits,
 		sequenceMask: uint64(int64(-1) ^ (int64(-1) << sequenceBits)),
+		upperMask:    0xFFFFFFFFFFFFFFFF,
 		hardwareID:   hardwareID,
 		processID:    processID & 0xFFFF,
 		machineID:    binary.BigEndian.Uint64(tempBytes) | uint64(processID&0xFFFF),
@@ -131,8 +133,8 @@ func (ofid *overtFlakeIDSynthesizer) SynthesizeID(buffer []byte, index int, time
 	// each id, when the generator could do the calculation + shift 1 time per allocate)
 	delta := uint64(time - ofid.epoch)
 
-	// upper 32 are time | sequence
-	var upper = (delta << ofid.sequenceBits) | (sequence & ofid.sequenceMask)
+	// upper 32 are (time | sequence) & upperMask
+	var upper = ((delta << ofid.sequenceBits) | (sequence & ofid.sequenceMask)) & ofid.upperMask
 
 	// Write the id
 	binary.BigEndian.PutUint64(buffer[index:index+8], upper)
