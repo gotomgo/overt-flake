@@ -51,7 +51,7 @@ func showUsage() {
 
 func showAppVersion() {
 	fmt.Fprintf(os.Stderr, `ofsrvr: %s, Runtime: %s, Compiler: %s, Copyright © 2017 Overtone Studios, Inc.`,
-		"0.6.0",
+		"0.7.0",
 		runtime.Compiler,
 		runtime.Version())
 	fmt.Fprintln(os.Stderr, "")
@@ -105,6 +105,9 @@ func createOvertFlakeIDGenerator(
 	case "default":
 		generator = flake.NewOvertFlakeGenerator(epoch, hardwareID, os.Getpid(), waitForTime)
 		break
+	case "of53":
+		generator = flake.NewOvertFlakeGenerator53(hardwareID, os.Getpid(), waitForTime)
+		break
 	case "twitter":
 		generator = flake.NewTwitterGenerator(machineid, datacenterid, waitForTime)
 		break
@@ -136,7 +139,7 @@ func main() {
 	flag.StringVar(&argIPAddr, "ip", "", "the interface/address to listen on")
 	flag.Int64Var(&waitForTime, "waitfor", 0, "the time to wait for prior to generating ids")
 	flag.StringVar(&argHidType, "hidtype", "", "the hardware id provider")
-	flag.StringVar(&argGenType, "gentype", "", "the type of the id generator")
+	flag.StringVar(&argGenType, "gentype", "", "the type of the id generator (default,of53,twitter)")
 	flag.StringVar(&argAuthToken, "auth", "", "the auth token used to authenticate clients")
 	flag.Int64Var(&argEpoch, "epoch", -1, "the epoch used for id generation")
 	flag.BoolVar(&showVersion, "version", false, "print ofsrvr version information")
