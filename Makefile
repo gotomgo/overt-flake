@@ -210,5 +210,9 @@ endif
 	docker tag $(DEPLOY_ACCOUNT)/$(TARGET):latest quay.io/$(DEPLOY_ACCOUNT)/$(TARGET):$(dockertag)
 	docker push quay.io/$(DEPLOY_ACCOUNT)/$(TARGET):$(dockertag)
 
+docker-deploy-version:
+	docker tag $(DEPLOY_ACCOUNT)/$(TARGET):latest quay.io/$(DEPLOY_ACCOUNT)/$(TARGET):$(VERSION)
+	docker push quay.io/$(DEPLOY_ACCOUNT)/$(TARGET):$(VERSION)
+
 docker-run: docker-release
 	docker-compose up
