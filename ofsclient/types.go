@@ -44,5 +44,5 @@ type OvertFlakeClient interface {
 	GenerateFlakes(count int) (flakes []flake.OvertFlakeID, err error)
 
 	// GenerateFlake generates a single ID in the form of *flake.OvertFlakeID
-	GenerateFlake() (flake *flake.OvertFlakeID, err error)
+	GenerateFlake() (flake flake.OvertFlakeID, err error)
 }
