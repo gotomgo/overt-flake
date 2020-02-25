@@ -122,7 +122,7 @@ func (server *OvertFlakeServer) serveClient(reader io.Reader, writer io.Writer) 
 				}
 				hasAuthed = true
 
-				// on the the next request
+				// on to the next request
 				continue
 			}
 
