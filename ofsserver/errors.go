@@ -28,5 +28,5 @@ func CreateArgumentNilError(paramName string) error {
 // CreateBadArgumentError creates a custom form ErrArgumentNil with the argument
 // name included in the error message
 func CreateBadArgumentError(paramName, message string, args ...interface{}) error {
-	return fmt.Errorf("The value of the argument '%s' is invalid: %s", paramName, fmt.Sprintf(message, args))
+	return fmt.Errorf("The value of the argument '%s' is invalid: %s", paramName, fmt.Sprintf(message, args...))
 }
