@@ -130,10 +130,10 @@ func (c *overtFlakeClient) GenerateFlakes(count int) (flakes []flake.OvertFlakeI
 }
 
 // GenerateID generates a single overt-flake identifier in the form of a *big.Int
-func (c *overtFlakeClient) GenerateFlake() (*flake.OvertFlakeID, error) {
+func (c *overtFlakeClient) GenerateFlake() (flake.OvertFlakeID, error) {
 	ids, err := c.GenerateFlakes(1)
 	if len(ids) == 0 {
 		return nil, err
 	}
-	return &ids[0], nil
+	return ids[0], nil
 }
